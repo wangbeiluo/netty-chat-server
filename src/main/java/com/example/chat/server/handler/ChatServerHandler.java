@@ -6,7 +6,9 @@ import com.example.chat.protocol.LoginRequest;
 import com.example.chat.protocol.LoginResponse;
 import com.example.chat.protocol.MessageWrapper;
 import com.example.chat.server.SessionManager;
+import com.example.chat.server.db.MessageDao;
 import com.example.chat.server.db.UserDao;
+import com.example.chat.server.model.Message;
 import com.example.chat.server.model.User;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class ChatServerHandler extends SimpleChannelInboundHandler<MessageWrapper> {
 
     private final UserDao userDao = new UserDao();
+    private final MessageDao messageDao = new MessageDao();
     
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, MessageWrapper msg) throws Exception {
@@ -90,20 +93,33 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<MessageWrappe
     }
 
 
-    private void handleChatMessage(ChannelHandlerContext ctx, ChatMessage chatMsg){
+    private void handleChatMessage(ChannelHandlerContext ctx, ChatMessage chatMsgDto){
         String fromUserId = SessionManager.getUserId(ctx.channel());
         if (fromUserId == null){
             log.warn("收到未登录用户的消息：{}",ctx.channel().id());
             return;
         }
 
-        log.info("收到用户[{}]的消息：{}",fromUserId,chatMsg.getContent());
+        Message messageEntity = Message.builder()
+                .fromUserId(fromUserId)
+                .content(chatMsgDto.getContent())
+                .createdAt(System.currentTimeMillis())
+                .build();
+//        log.info("收到用户[{}]的消息：{}",fromUserId,chatMsg.getContent());
+
+        // 持久化 Message 实体
+        try {
+            messageDao.saveMessage(messageEntity);
+            log.info("消息已成功存入数据库");
+        } catch (SQLException e) {
+            log.error("消息存入数据库失败", e);
+        }
 
         //TODO 目前简单实现一个广播，将消息发给所有在线用户，后续根据情况实现单发或者群发
         ChatMessage broadcastMsg = ChatMessage.newBuilder()
                 .setFromUserId(fromUserId)
                 .setFromUsername("某人") // 实际项目应从Session或者DB获取
-                .setContent(chatMsg.getContent())
+                .setContent(chatMsgDto.getContent())
                 .setTimestamp(System.currentTimeMillis())
                 .build();
 
