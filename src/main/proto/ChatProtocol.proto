@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option java_package = "com.example.chat.protocol";
+option java_multiple_files = true;
+
+// 顶层消息包装器
+message MessageWrapper {
+  oneof payload {
+    LoginRequest login_request = 1;
+    LoginResponse login_response = 2;
+    ChatMessage chat_message = 3;
+    ServerNotification server_notification = 4;
+  }
+}
+
+// 具体消息定义
+message LoginRequest {
+  string username = 1;
+}
+
+message LoginResponse {
+  bool success = 1;
+  string message = 2;
+  string user_id = 3;
+}
+
+message ChatMessage {
+  string from_user_id = 1;
+  string from_username = 2;
+  string content = 3;
+  int64 timestamp = 4;
+}
+
+message ServerNotification {
+  string message = 1;
+}
