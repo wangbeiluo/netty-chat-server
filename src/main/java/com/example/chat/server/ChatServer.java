@@ -5,11 +5,11 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ChatServer {
-    private static final Logger logger = LoggerFactory.getLogger(ChatServer.class);
+    
     private final int port;
 
     public ChatServer(int port) {
@@ -27,13 +27,13 @@ public class ChatServer {
                     .childHandler(new ServerChannelInitializer());
 
             ChannelFuture future = bootstrap.bind(port).sync();
-            logger.info("服务器启动成功，监听端口: {}", port);
+            log.info("服务器启动成功，监听端口: {}", port);
 
             future.channel().closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully().sync();
             workerGroup.shutdownGracefully().sync();
-            logger.info("服务器已关闭");
+            log.info("服务器已关闭");
         }
     }
 

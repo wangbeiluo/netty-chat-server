@@ -49,7 +49,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<MessageWrappe
     }
 
     private void handleChatMessage(ChannelHandlerContext ctx, ChatMessage chatMsg){
-        String fromUserId = chatMsg.getFromUserId();
+        String fromUserId = SessionManager.getUserId(ctx.channel());
         if (fromUserId == null){
             log.warn("收到未登录用户的消息：{}",ctx.channel().id());
             return;
