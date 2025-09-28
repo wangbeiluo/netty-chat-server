@@ -15,4 +15,5 @@ public class Message {
     private String toUserId;
     private String content;
     private Long createdAt;
+    private String roomId;
 }

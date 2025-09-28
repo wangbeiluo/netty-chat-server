@@ -10,6 +10,11 @@ message MessageWrapper {
     LoginResponse login_response = 2;
     ChatMessage chat_message = 3;
     ServerNotification server_notification = 4;
+
+    CreateRoomRequest create_room_request = 5;
+    CreateRoomResponse create_room_response = 6;
+    JoinRoomRequest join_room_request = 7;
+    JoinRoomResponse join_room_response = 8;
   }
 }
 
@@ -25,13 +30,35 @@ message LoginResponse {
   string user_id = 3;
 }
 
+message CreateRoomRequest{
+  string room_name = 1;
+}
+
+message CreateRoomResponse{
+  bool success = 1;
+  string message = 2;
+  string room_id = 3;
+}
+
 message ChatMessage {
   string from_user_id = 1;
   string from_username = 2;
   string content = 3;
   int64 timestamp = 4;
+  string room_id = 5;
+}
+
+message JoinRoomRequest{
+  string room_id = 1;
+}
+
+message JoinRoomResponse{
+  bool success = 1;
+  string message = 2;
+  string room_id = 3;
 }
 
 message ServerNotification {
   string message = 1;
 }
+

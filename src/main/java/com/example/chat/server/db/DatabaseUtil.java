@@ -29,16 +29,39 @@ public class DatabaseUtil {
             stmt.execute(createUserTableSql);
             log.info("用户表 'users' 创建成功或已存在");
 
+
+            String createRoomsTableSql = "CREATE TABLE IF NOT EXISTS rooms(" +
+                    "id VARCHAR(255) PRIMARY KEY, " +
+                    "name VARCHAR(255) UNIQUE NOT NULL, " +
+                    "creator_id VARCHAR(255) NOT NULL, " +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                    "FOREIGN KEY (creator_id) REFERENCES users(id))";
+            stmt.execute(createRoomsTableSql);
+            log.info("房间表 'room' 创建成功或已存在");
+
+            String createRoomMembersTableSql = "CREATE TABLE IF NOT EXISTS room_members(" +
+                    "room_id VARCHAR(255) NOT NULL, " +
+                    "user_id VARCHAR(255) NOT NULL, " +
+                    "joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                    "PRIMARY KEY (room_id, user_id), " +
+                    "FOREIGN KEY (room_id) REFERENCES rooms(id), " +
+                    "FOREIGN KEY (user_id) REFERENCES users(id))";
+            stmt.execute(createRoomMembersTableSql);
+            log.info("房间用户表 'room_members' 创建成功或已存在");
+
             // 创建 message 表
             String createMessageTableSql = "CREATE TABLE IF NOT EXISTS message(" +
-                                           "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-                                           "from_user_id VARCHAR(255) NOT NULL, " +
-                                           "to_user_id VARCHAR(255), " + // 私聊时使用，群聊/广播为NULL
-                                           "content TEXT NOT NULL, " +
-                                           "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                                           "FOREIGN KEY (from_user_id) REFERENCES users(id))";
+                    "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                    "from_user_id VARCHAR(255) NOT NULL, " +
+                    "to_user_id VARCHAR(255), " + // 私聊时使用，群聊/广播为NULL
+                    "room_id VARCHAR(255) NOT NULL, " +
+                    "content TEXT NOT NULL, " +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                    "FOREIGN KEY (room_id) REFERENCES rooms(id), " +
+                    "FOREIGN KEY (from_user_id) REFERENCES users(id))";
             stmt.execute(createMessageTableSql);
             log.info("消息表 'message' 创建成功或已存在");
+
         } catch (SQLException e) {
             log.error("数据库初始化失败",e);
             //TODO 实际项目应抛出异常并终止程序

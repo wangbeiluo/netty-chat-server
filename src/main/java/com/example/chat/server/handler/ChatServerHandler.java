@@ -1,15 +1,14 @@
 package com.example.chat.server.handler;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
-import com.example.chat.protocol.ChatMessage;
-import com.example.chat.protocol.LoginRequest;
-import com.example.chat.protocol.LoginResponse;
-import com.example.chat.protocol.MessageWrapper;
+import com.example.chat.protocol.*;
 import com.example.chat.server.SessionManager;
 import com.example.chat.server.db.MessageDao;
 import com.example.chat.server.db.UserDao;
 import com.example.chat.server.model.Message;
 import com.example.chat.server.model.User;
+import com.example.chat.server.session.Room;
+import com.example.chat.server.session.RoomManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -28,14 +27,22 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<MessageWrappe
     
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, MessageWrapper msg) throws Exception {
-        if (msg.hasLoginRequest()){
-            handleLoginRequest(ctx,msg.getLoginRequest());
-        } else if (msg.hasChatMessage()){
-            //聊天消息处理
-            handleChatMessage(ctx,msg.getChatMessage());
-            log.info("收到聊天消息：{}",msg.getChatMessage().getContent());
-        } else {
-            log.warn("收到未知类型的消息");
+        switch (msg.getPayloadCase()){
+            case LOGIN_REQUEST:
+                handleLoginRequest(ctx, msg.getLoginRequest());
+                break;
+            case CHAT_MESSAGE:
+                handleChatMessage(ctx, msg.getChatMessage());
+                log.debug("收到聊天消息：{}",msg.getChatMessage().getContent());
+                break;
+            case CREATE_ROOM_REQUEST:
+                handleCreateRoomRequest(ctx, msg.getCreateRoomRequest());
+                break;
+            case JOIN_ROOM_REQUEST:
+                handleJoinRoomRequest(ctx, msg.getJoinRoomRequest());
+                break;
+            default:
+                log.warn("收到未知类型的消息:{}", msg.getPayloadCase());
         }
     }
 
@@ -100,33 +107,88 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<MessageWrappe
             return;
         }
 
-        Message messageEntity = Message.builder()
-                .fromUserId(fromUserId)
-                .content(chatMsgDto.getContent())
-                .createdAt(System.currentTimeMillis())
-                .build();
-//        log.info("收到用户[{}]的消息：{}",fromUserId,chatMsg.getContent());
-
-        // 持久化 Message 实体
-        try {
-            messageDao.saveMessage(messageEntity);
-            log.info("消息已成功存入数据库");
-        } catch (SQLException e) {
-            log.error("消息存入数据库失败", e);
+        String roomId = chatMsgDto.getRoomId();
+        if (roomId == null || roomId.isEmpty()){
+            log.warn("收到没有指定 roomId 的聊天信息");
+            return;
         }
 
-        //TODO 目前简单实现一个广播，将消息发给所有在线用户，后续根据情况实现单发或者群发
-        ChatMessage broadcastMsg = ChatMessage.newBuilder()
-                .setFromUserId(fromUserId)
-                .setFromUsername("某人") // 实际项目应从Session或者DB获取
-                .setContent(chatMsgDto.getContent())
-                .setTimestamp(System.currentTimeMillis())
+        Optional<Room> roomOpt = RoomManager.getRoom(roomId);
+        if (roomOpt.isPresent()){
+            Room room = roomOpt.get();
+
+            ChatMessage broadcastMsg = ChatMessage.newBuilder()
+                    .setFromUserId(fromUserId)
+                    .setFromUsername("某人") // 实际项目应从Session或者DB获取
+                    .setContent(chatMsgDto.getContent())
+                    .setTimestamp(System.currentTimeMillis())
+                    .build();
+
+            Message messageEntity = Message.builder()
+                    .fromUserId(fromUserId)
+                    .roomId(roomId)
+                    .content(chatMsgDto.getContent())
+                    .createdAt(System.currentTimeMillis())
+                    .build();
+
+            // 持久化 Message 实体
+            try {
+                messageDao.saveMessage(messageEntity);
+                log.debug("消息已成功存入数据库");
+            } catch (SQLException e) {
+                log.error("消息存入数据库失败", e);
+            }
+
+            room.broadcast(MessageWrapper.newBuilder().setChatMessage(broadcastMsg).build());
+        } else {
+            log.warn("用户【{}】试图向一个不存在的房间【{}】发送消息",fromUserId,roomId);
+        }
+    }
+
+    private void handleCreateRoomRequest(ChannelHandlerContext ctx, CreateRoomRequest req) {
+        String userId = SessionManager.getUserId(ctx.channel());
+        if (userId == null) return; // 未登录用户不能创建
+
+        String roomName = req.getRoomName();
+        String roomId = UUID.randomUUID().toString().substring(0, 8);
+
+        //TODO 在 DAO 中将房间信息存入数据库
+
+        RoomManager.createRoom(roomId,roomName);
+
+        CreateRoomResponse response = CreateRoomResponse.newBuilder()
+                .setSuccess(true)
+                .setMessage("房间 '" + roomName + "' 创建成功！")
+                .setRoomId(roomId)
                 .build();
+        ctx.writeAndFlush(MessageWrapper.newBuilder().setCreateRoomResponse(response).build());
+    }
 
-        MessageWrapper wrapper = MessageWrapper.newBuilder().setChatMessage(broadcastMsg).build();
+    private void handleJoinRoomRequest(ChannelHandlerContext ctx, JoinRoomRequest joinRoomRequest) {
+        String userId = SessionManager.getUserId(ctx.channel());
+        if (userId == null) return;
 
-        for (Channel channel: SessionManager.USER_CHANNEL_MAP.values()) {
-            channel.writeAndFlush(wrapper);
+        String roomId = joinRoomRequest.getRoomId();
+        Optional<Room> roomOpt = RoomManager.getRoom(roomId);
+
+        if (roomOpt.isPresent()){
+            Room room = roomOpt.get();
+            room.addMember(userId, ctx.channel());
+
+            //TODO 在 DAO 中将成员关系存入数据库
+
+            JoinRoomResponse response = JoinRoomResponse.newBuilder()
+                    .setSuccess(true)
+                    .setMessage("成功加入房间 " + room.getRoomName())
+                    .setRoomId(roomId)
+                    .build();
+            ctx.writeAndFlush(MessageWrapper.newBuilder().setJoinRoomResponse(response).build());
+        } else {
+            JoinRoomResponse response = JoinRoomResponse.newBuilder()
+                    .setSuccess(false)
+                    .setMessage("房间不存在")
+                    .build();
+            ctx.writeAndFlush(MessageWrapper.newBuilder().setJoinRoomResponse(response).build());
         }
     }
 
