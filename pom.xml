@@ -17,6 +17,7 @@
         <slf4j.version>2.0.16</slf4j.version>
         <lombok.version>1.18.34</lombok.version>
         <junit.version>4.13.2</junit.version>
+
     </properties>
 
     <dependencies>
@@ -30,6 +31,19 @@
             <artifactId>protobuf-java</artifactId>
             <version>${protobuf.version}</version>
         </dependency>
+        <!-- H2 内存数据库 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
+        </dependency>
+
+        <dependency>
+            <groupId>at.favre.lib</groupId>
+            <artifactId>bcrypt</artifactId>
+            <version>0.10.2</version>
+        </dependency>
+        <!--日志相关-->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

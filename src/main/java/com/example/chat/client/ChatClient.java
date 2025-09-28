@@ -48,10 +48,13 @@ public class ChatClient {
     private void startConsoleInput(Channel channel) {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("请输入你的用户名进行登录：");
+        System.out.print("请输入你的用户名:");
         String username = scanner.nextLine();
+        System.out.print("请输入你的密码:");
+        String password = scanner.nextLine();
 
-        LoginRequest loginRequest = LoginRequest.newBuilder().setUsername(username).build();
+
+        LoginRequest loginRequest = LoginRequest.newBuilder().setUsername(username).setPassword(password).build();
         MessageWrapper messageWrapper = MessageWrapper.newBuilder().setLoginRequest(loginRequest).build();
         channel.writeAndFlush(messageWrapper);
 

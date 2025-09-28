@@ -1,5 +1,6 @@
 package com.example.chat.server;
 
+import com.example.chat.server.db.DatabaseUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
@@ -17,6 +18,8 @@ public class ChatServer {
     }
 
     public void start() throws Exception {
+        DatabaseUtil.initialize();
+
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
