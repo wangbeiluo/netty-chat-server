@@ -22,12 +22,12 @@ public class Room {
 
     public void addMember(String userId, Channel channel) {
         members.put(userId, channel);
-        log.info("用户【{}】加入房间【{}】，当前房间人数：{}",userId,roomId,roomName);
+        log.info("用户【{}】加入房间【{}】，当前房间人数：{}",userId,roomId,members.size());
     }
 
     public void removeMember(String userId) {
         members.remove(userId);
-        log.info("用户【{}】离开房间【{}】，当前房间人数：{}",userId,roomId,roomName);
+        log.info("用户【{}】离开房间【{}】，当前房间人数：{}",userId,roomId,members.size());
     }
 
     public void broadcast(MessageWrapper message) {

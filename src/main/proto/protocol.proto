@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+// 导入所有模块的协议文件
+import "auth.proto";
+import "chat.proto";
+import "room.proto";
+
+option java_package = "com.example.chat.protocol";
+option java_multiple_files = true;
+
+// 唯一的顶层消息包装器
+message MessageWrapper {
+  oneof payload {
+    // 用户与会话
+    LoginRequest login_request = 1;
+    LoginResponse login_response = 2;
+    // 聊天
+    ChatMessage chat_message = 3;
+    ServerNotification server_notification = 4;
+    // 房间
+    CreateRoomRequest create_room_request = 5;
+    CreateRoomResponse create_room_response = 6;
+    JoinRoomRequest join_room_request = 7;
+    JoinRoomResponse join_room_response = 8;
+    LeaveRoomRequest leave_room_request = 9;
+    LeaveRoomResponse leave_room_response = 10;
+    ListRoomsRequest list_rooms_request = 11;
+    ListRoomsResponse list_rooms_response = 12;
+    ListMembersRequest list_members_request = 13;
+    ListMembersResponse list_members_response = 14;
+  }
+}

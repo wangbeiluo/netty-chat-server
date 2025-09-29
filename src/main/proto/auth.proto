@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_package = "com.example.chat.protocol";
+option java_multiple_files = true;
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  bool success = 1;
+  string message = 2;
+  string user_id = 3;
+}

@@ -1,6 +1,7 @@
 package com.example.chat.server;
 
 import com.example.chat.server.db.DatabaseUtil;
+import com.example.chat.server.handler.MessageHandlerRouter;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
@@ -18,6 +19,9 @@ public class ChatServer {
     }
 
     public void start() throws Exception {
+        // 在启动 Netty 服务器之前，先初始化消息路由器
+        MessageHandlerRouter.initialize();
+
         DatabaseUtil.initialize();
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
