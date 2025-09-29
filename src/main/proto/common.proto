@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_package = "com.example.chat.protocol";
+option java_multiple_files = true;
+
+// 房间信息
+message RoomInfo {
+  string room_id = 1;
+  string room_name = 2;
+  int32 member_count = 3;
+}
+
+// 成员信息
+message MemberInfo{
+  string user_id = 1;
+  string user_name = 2;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option java_package = "com.example.chat.protocol";
+option java_multiple_files = true;
+
+message ChatMessage {
+  string from_user_id = 1;
+  string from_username = 2;
+  string content = 3;
+  int64 timestamp = 4;
+  string room_id = 5;
+}
+
+message ServerNotification {
+  string message = 1;
+}
